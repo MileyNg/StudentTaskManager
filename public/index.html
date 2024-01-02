@@ -1,38 +1,66 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Task Manager App</title>
-  <link
-    rel="stylesheet"
-    href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
-  />
-  <link rel="stylesheet" type="text/css" href="/style.css" />
-</head>
-<body>
-  <div class="container mt-5">
-    <h1 class="mb-4">Task Manager</h1>
-    <form id="taskForm">
-      <div class="form-group">
-        <input
-          type="text"
-          id="taskInput"
-          class="form-control"
-          placeholder="Add a new task"
-          required
-        />
-      </div>
-      <button type="submit" class="btn btn-primary">Add Task</button>
-    </form>
-    <ul id="taskList" class="list-group mt-3">
-      <!-- Tasks will be added dynamically here -->
-    </ul>
-  </div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Student Task Manager</title>
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+    />
+  </head>
+  <body>
+    <div class="container mt-5">
+      <h1 class="mb-5">Student Task Manager</h1>
 
-  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
-  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-  <script src="/functions.js"></script>
-</body>
+      <div id="coursesList"></div>
+
+      <!-- Enroll Section -->
+      <div class="mt-5">
+        <h2>Enroll in a Course</h2>
+        <div class="form-group">
+          <label for="enrollInput">Course Code:</label>
+          <input type="text" id="enrollInput" class="form-control" />
+        </div>
+        <button id="enrollButton" class="btn btn-primary">Enroll</button>
+      </div>
+
+      <!-- Enrolled Courses Dropdown -->
+      <div class="form-group mt-5">
+        <label for="enrolledCourses"><h2>Enrolled Courses:</h2></label>
+        <select id="enrolledCourses" class="form-control"></select>
+      </div>
+
+      <div id="tasksList"></div>
+      <div class="mt-4">
+        <h4>Add a Task</h4>
+        <form id="addTaskForm">
+          <div class="form-group">
+            <label for="taskDescription">Task Description:</label>
+            <input
+              type="text"
+              id="taskDescription"
+              class="form-control"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="taskDeadline">Task Deadline:</label>
+            <input
+              type="date"
+              id="taskDeadline"
+              class="form-control"
+              required
+            />
+          </div>
+          <button type="submit" class="btn btn-primary">Add Task</button>
+        </form>
+      </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="/functions.js"></script>
+  </body>
 </html>
