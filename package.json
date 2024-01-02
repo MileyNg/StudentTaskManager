@@ -1,8 +1,12 @@
 {
   "name": "studenttaskmanager",
   "version": "1.0.0",
-  "description": "The Student Task Manager System is designed to assist students in organizing and managing their academic tasks efficiently.",
-  "main": "index.js",
+  "description": "The Student Task Manager System is designed to assist students in organizing and managing their academic tasks efficiently",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
   "author": "",
   "license": "ISC",
   "dependencies": {
