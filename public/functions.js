@@ -72,7 +72,6 @@ document.addEventListener("DOMContentLoaded", function () {
           alert(`Error: ${data.error}`);
         } else {
           alert(`Enrolled in course with code ${courseCode}`);
-          // Refresh the course list after enrolling
           location.reload();
         }
       })
@@ -82,7 +81,7 @@ document.addEventListener("DOMContentLoaded", function () {
       });
   }
 
-  // Fetch and diplay tasks
+  // Fetch and display tasks
   function fetchTasks(courseId) {
     // Fetch tasks for the selected course
     fetch(`/api/${studentId}/${courseId}/tasks`)
@@ -145,40 +144,38 @@ document.addEventListener("DOMContentLoaded", function () {
         console.error("Error deleting task:", error);
         alert(`Error deleting task: ${error.message}`);
       });
+  }
 
-    // Call fetchTasks() initially to render the tasks for the selected course
-    const selectedCourseId = enrolledCoursesDropdown.value;
-    if (selectedCourseId) {
-      fetchTasks(selectedCourseId);
-    }
+  // Call fetchTasks() initially to render the tasks for the selected course
+  const selectedCourseId = enrolledCoursesDropdown.value;
+  if (selectedCourseId) {
+    fetchTasks(selectedCourseId);
+  }
 
-    function markTaskAsDone(taskId) {
-      // Mark the task as done
-      fetch(`/api/tasks/${taskId}`, {
-        method: "PATCH",
+  // Mark the task as done
+  function markTaskAsDone(taskId) {
+    fetch(`/api/tasks/${taskId}`, {
+      method: "PATCH",
+    })
+      .then((response) => response.json())
+      .then((task) => {
+        alert(`Task "${task.description}" marked as done.`);
+
+        // Get the selected course ID from the dropdown to refresh the tasks
+        const selectedCourseId = enrolledCoursesDropdown.value;
+        if (selectedCourseId) {
+          fetchTasks(selectedCourseId);
+        }
       })
-        .then((response) => response.json())
-        .then((task) => {
-          alert(`Task "${task.description}" marked as done.`);
-
-          // Get the selected course ID from the dropdown to refresh the tasks
-          const selectedCourseId = enrolledCoursesDropdown.value;
-
-          // Refresh the tasks list
-          if (selectedCourseId) {
-            fetchTasks(selectedCourseId);
-          }
-        })
-        .catch((error) => {
-          console.error("Error marking task as done:", error);
-          alert(`Error marking task as done: ${error.message}`);
-        });
-    }
+      .catch((error) => {
+        console.error("Error marking task as done:", error);
+        alert(`Error marking task as done: ${error.message}`);
+      });
   }
 
   const addTaskForm = document.getElementById("addTaskForm");
   addTaskForm.addEventListener("submit", function (event) {
-    event.preventDefault(); // Prevent the default form submission behavior
+    event.preventDefault(); 
 
     const selectedCourseId = enrolledCoursesDropdown.value;
     if (!selectedCourseId) {
@@ -189,8 +186,6 @@ document.addEventListener("DOMContentLoaded", function () {
     // Get task details from the form
     const taskDescription = document.getElementById("taskDescription").value;
     const taskDeadline = document.getElementById("taskDeadline").value;
-
-    // Send a request to add the task
     addTask(selectedCourseId, taskDescription, taskDeadline);
   });
 
@@ -208,7 +203,6 @@ document.addEventListener("DOMContentLoaded", function () {
       .then((response) => response.json())
       .then((task) => {
         alert(`Task added: ${task.description}`);
-        // Refresh the tasks list
         fetchTasks(courseId);
       })
       .catch((error) => console.error("Error adding task:", error));
@@ -217,7 +211,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 window.unenrollFromCourse = function (courseId) {
   if (!confirm("Are you sure you want to unenroll from this course?")) {
-    return; // Exit if user cancels the confirmation
+    return;
   }
 
   fetch(`/api/unenroll`, {
@@ -233,7 +227,7 @@ window.unenrollFromCourse = function (courseId) {
     .then((response) => {
       if (response.ok) {
         alert("Unenrolled successfully!");
-        location.reload(); // Reload the page to reflect the update
+        location.reload(); 
       } else {
         return response.json().then((data) => {
           throw new Error(data.error || "Failed to unenroll from the course.");
