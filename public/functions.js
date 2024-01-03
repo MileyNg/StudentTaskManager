@@ -1,3 +1,6 @@
+  // StudentId to impersonate a specific student
+  const studentId = 1;
+
 document.addEventListener("DOMContentLoaded", function () {
   const coursesList = document.getElementById("coursesList");
   const tasksList = document.getElementById("tasksList");
@@ -5,35 +8,33 @@ document.addEventListener("DOMContentLoaded", function () {
   const enrollButton = document.getElementById("enrollButton");
   const enrolledCoursesDropdown = document.getElementById("enrolledCourses");
 
-  // Change the studentId to impersonate a specific student
-  const studentId = 1;
-
   // Fetch and display courses
-  fetch(`/api/courses/${studentId}`)
+  fetch(`/api/${studentId}/courses`)
     .then((response) => response.json())
     .then((courses) => {
-      coursesList.innerHTML = "<h2 class='mb-4'>Available Courses</h2>";
-      courses.forEach((course) => {
-        const courseItem = document.createElement("div");
-        courseItem.innerHTML = `<p>${course.title} - ${course.instructor} ${
-          course.enrolled ? "(Enrolled)" : ""
-        }</p>`;
-        coursesList.appendChild(courseItem);
-      });
+      coursesList.innerHTML = "<h2 class='mb-4'>Available Courses</h";
       enrolledCoursesDropdown.innerHTML =
         "<option value=''>Select a course</option>";
       courses.forEach((course) => {
+        const courseItem = document.createElement("div");
+        courseItem.classList.add("course-item");
+        let courseHTML = `<p>${course.title} - ${course.instructor}`;
         if (course.enrolled) {
+          courseHTML += " (Enrolled)";
+          courseHTML += ` <button class='btn btn-danger btn-sm' onclick='window.unenrollFromCourse(${course.courseid})'> X </button>`;
           const option = document.createElement("option");
           option.value = course.courseid;
           option.text = `${course.title} - ${course.instructor}`;
           enrolledCoursesDropdown.appendChild(option);
         }
+        courseHTML += "</p>";
+        courseItem.innerHTML = courseHTML;
+        coursesList.appendChild(courseItem);
       });
     })
     .catch((error) => console.error("Error fetching courses:", error));
 
-  // dropdown for enrolled courses
+  // Dopdown for enrolled courses
   enrolledCoursesDropdown.addEventListener("change", () => {
     const selectedCourseId = enrolledCoursesDropdown.value;
     if (selectedCourseId) {
@@ -61,46 +62,84 @@ document.addEventListener("DOMContentLoaded", function () {
       }),
     })
       .then((response) => {
-        if (response.ok) {
-          alert(`Enrolled in course with code ${courseCode}`);
-          // Refresh the course list after enrolling
-          location.reload();
-        } else {
-          return response.json();
+        if (!response.ok) {
+          throw new Error("Response not OK");
         }
+        return response.json();
       })
       .then((data) => {
         if (data && data.error) {
           alert(`Error: ${data.error}`);
+        } else {
+          alert(`Enrolled in course with code ${courseCode}`);
+          // Refresh the course list after enrolling
+          location.reload();
         }
       })
-      .catch((error) => console.error("Error enrolling in course:", error));
+      .catch((error) => {
+        console.error("Error enrolling in course:", error);
+        alert(`Error enrolling in course: ${error.message}`);
+      });
+  }
+
+  function unenrollFromCourse(courseId) {
+    fetch(`/api/unenroll`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        studentId,
+        courseId,
+      }),
+    })
+      .then((response) => {
+        if (response.ok) {
+          alert("Unenrolled successfully!");
+          location.reload(); // Reload the page to reflect the update
+        } else {
+          throw new Error("Failed to unenroll from the course.");
+        }
+      })
+      .catch((error) => {
+        console.error("Error unenrolling from course:", error);
+        alert("Error unenrolling from course.");
+      });
   }
 
   function fetchTasks(courseId) {
     // Fetch tasks for the selected course
-    fetch(`/api/tasks/${courseId}`)
+    fetch(`/api/${studentId}/${courseId}/tasks`)
       .then((response) => response.json())
       .then((tasks) => {
-        tasksList.innerHTML = `<h3 class='mt-4'>Tasks for Course ${courseId}</h3>`;
+        tasksList.innerHTML = `<h3 class='mt-4'>Tasks for Course</h3>`;
         tasks.forEach((task) => {
           const taskItem = document.createElement("div");
-          var deadline = new Date(task.deadline).toISOString().split('T')[0];
+          const deadline = new Date(task.deadline).toISOString().split("T")[0];
+          taskItem.innerHTML = `</br><p>${
+            task.description
+          } - Deadline: ${deadline}${task.completionstatus ? " ✅" : ""}</p>`;
+
+          // If the task is not completed, offer a way to mark it as done
           if (!task.completionstatus) {
-            taskItem.innerHTML = `<p>${task.description} - Deadline: ${deadline}</p>`;
             const markDoneBtn = document.createElement("button");
-            markDoneBtn.textContent = "Mark Done";
+            markDoneBtn.textContent = "Done";
             markDoneBtn.addEventListener("click", () =>
               markTaskAsDone(task.taskid)
             );
             taskItem.appendChild(markDoneBtn);
-          } else {
-            taskItem.innerHTML = `<p>${task.description} - Deadline: ${deadline} ✅</p>`;
           }
+
           tasksList.appendChild(taskItem);
         });
       })
       .catch((error) => console.error("Error fetching tasks:", error));
+  }
+
+  // Call fetchTasks() initially to render the tasks for the selected course
+  const selectedCourseId = enrolledCoursesDropdown.value;
+  if (selectedCourseId) {
+    fetchTasks(selectedCourseId);
   }
 
   function markTaskAsDone(taskId) {
@@ -111,9 +150,19 @@ document.addEventListener("DOMContentLoaded", function () {
       .then((response) => response.json())
       .then((task) => {
         alert(`Task "${task.description}" marked as done.`);
-        fetchTasks(task.courseid);
+
+        // Get the selected course ID from the dropdown to refresh the tasks
+        const selectedCourseId = enrolledCoursesDropdown.value;
+
+        // Refresh the tasks list
+        if (selectedCourseId) {
+          fetchTasks(selectedCourseId);
+        }
       })
-      .catch((error) => console.error("Error marking task as done:", error));
+      .catch((error) => {
+        console.error("Error marking task as done:", error);
+        alert(`Error marking task as done: ${error.message}`);
+      });
   }
 
   const addTaskForm = document.getElementById("addTaskForm");
@@ -135,7 +184,7 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   function addTask(courseId, description, deadline) {
-    fetch(`/api/tasks/${courseId}`, {
+    fetch(`/api/${studentId}/${courseId}/tasks`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -154,3 +203,35 @@ document.addEventListener("DOMContentLoaded", function () {
       .catch((error) => console.error("Error adding task:", error));
   }
 });
+
+
+window.unenrollFromCourse = function (courseId) {
+  if (!confirm("Are you sure you want to unenroll from this course?")) {
+    return; // Exit if user cancels the confirmation
+  }
+
+  fetch(`/api/unenroll`, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      studentId,
+      courseId,
+    }),
+  })
+    .then((response) => {
+      if (response.ok) {
+        alert("Unenrolled successfully!");
+        location.reload(); // Reload the page to reflect the update
+      } else {
+        return response.json().then((data) => {
+          throw new Error(data.error || "Failed to unenroll from the course.");
+        });
+      }
+    })
+    .catch((error) => {
+      console.error("Error unenrolling from course:", error);
+      alert("Error unenrolling from course.");
+    });
+};

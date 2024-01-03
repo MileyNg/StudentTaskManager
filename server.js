@@ -21,7 +21,7 @@ const pool = new Pool({
 });
 
 // Get all courses for a student (including those not enrolled)
-app.get("/api/courses/:studentId", async (req, res) => {
+app.get("/api/:studentId/courses", async (req, res) => {
   const studentId = req.params.studentId;
 
   try {
@@ -63,7 +63,6 @@ app.post("/api/enroll", async (req, res) => {
   const { studentId, courseCode } = req.body;
 
   try {
-    // Get the course ID for the provided course code
     const courseQuery = "SELECT courseid FROM courses WHERE coursecode = $1";
     const courseResult = await pool.query(courseQuery, [courseCode]);
 
@@ -99,17 +98,38 @@ app.post("/api/enroll", async (req, res) => {
   }
 });
 
-// Get tasks for a specific course
-app.get("/api/tasks/:courseId", async (req, res) => {
+// Unenroll from a course
+app.delete("/api/unenroll", async (req, res) => {
+  const { studentId, courseId } = req.body;
+
+  try {
+    const unenrollQuery =
+      "DELETE FROM enrollment WHERE studentid = $1 AND courseid = $2";
+    const result = await pool.query(unenrollQuery, [studentId, courseId]);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Enrollment not found" });
+    }
+
+    res.json({ success: true, message: "Unenrollment successful" });
+  } catch (error) {
+    console.error("Error unenrolling from course:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// Get tasks for a specific course for a specific student
+app.get("/api/:studentId/:courseId/tasks", async (req, res) => {
+  const studentId = req.params.studentId;
   const courseId = req.params.courseId;
   const query = `
-    SELECT t.taskid, t.description, t.deadline, t.completionstatus
-    FROM tasks t
-    JOIN taskassignment ta ON t.taskid = ta.taskid
-    WHERE ta.courseid = $1;
+    SELECT taskid, description, deadline, completionstatus
+    FROM tasks
+    WHERE courseid = $1 AND studentid = $2
+    ORDER BY deadline;
   `;
   try {
-    const { rows } = await pool.query(query, [courseId]);
+    const { rows } = await pool.query(query, [courseId, studentId]);
     res.json(rows);
   } catch (error) {
     console.error("Error fetching tasks:", error);
@@ -117,19 +137,23 @@ app.get("/api/tasks/:courseId", async (req, res) => {
   }
 });
 
-// Add a task for a specific course
-app.post("/api/tasks/:courseId", async (req, res) => {
+// Add a task for a specific course for a specific student
+app.post("/api/:studentId/:courseId/tasks", async (req, res) => {
+  const studentId = req.params.studentId;
   const courseId = req.params.courseId;
   const { description, deadline } = req.body;
-  const query =
-    "INSERT INTO tasks (description, deadline, completionstatus) VALUES ($1, $2, false) RETURNING *";
+  const query = `
+    INSERT INTO tasks (description, deadline, completionstatus, courseid, studentid)
+    VALUES ($1, $2, false, $3, $4)
+    RETURNING *;
+  `;
   try {
-    const { rows } = await pool.query(query, [description, deadline]);
-    const taskId = rows[0].taskid;
-    await pool.query(
-      "INSERT INTO taskassignment (taskid, courseid) VALUES ($1, $2)",
-      [taskId, courseId]
-    );
+    const { rows } = await pool.query(query, [
+      description,
+      deadline,
+      courseId,
+      studentId,
+    ]);
     res.json(rows[0]);
   } catch (error) {
     console.error("Error adding task:", error);
