@@ -1,5 +1,5 @@
-  // StudentId to impersonate a specific student
-  const studentId = 1;
+// StudentId to impersonate a specific student
+const studentId = 1;
 
 document.addEventListener("DOMContentLoaded", function () {
   const coursesList = document.getElementById("coursesList");
@@ -82,31 +82,7 @@ document.addEventListener("DOMContentLoaded", function () {
       });
   }
 
-  function unenrollFromCourse(courseId) {
-    fetch(`/api/unenroll`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        studentId,
-        courseId,
-      }),
-    })
-      .then((response) => {
-        if (response.ok) {
-          alert("Unenrolled successfully!");
-          location.reload(); // Reload the page to reflect the update
-        } else {
-          throw new Error("Failed to unenroll from the course.");
-        }
-      })
-      .catch((error) => {
-        console.error("Error unenrolling from course:", error);
-        alert("Error unenrolling from course.");
-      });
-  }
-
+  // Fetch and diplay tasks
   function fetchTasks(courseId) {
     // Fetch tasks for the selected course
     fetch(`/api/${studentId}/${courseId}/tasks`)
@@ -118,17 +94,24 @@ document.addEventListener("DOMContentLoaded", function () {
           const deadline = new Date(task.deadline).toISOString().split("T")[0];
           taskItem.innerHTML = `</br><p>${
             task.description
-          } - Deadline: ${deadline}${task.completionstatus ? " ✅" : ""}</p>`;
+          } - Deadline: ${deadline}${task.completionstatus ? " ✅" : ""}`;
 
           // If the task is not completed, offer a way to mark it as done
           if (!task.completionstatus) {
             const markDoneBtn = document.createElement("button");
             markDoneBtn.textContent = "Done";
+            markDoneBtn.classList.add("btn", "btn-success", "btn-sm", "mr-2");
             markDoneBtn.addEventListener("click", () =>
               markTaskAsDone(task.taskid)
             );
             taskItem.appendChild(markDoneBtn);
           }
+          // Delete button for specific task
+          const deleteBtn = document.createElement("button");
+          deleteBtn.textContent = "Delete";
+          deleteBtn.classList.add("btn", "btn-danger", "btn-sm");
+          deleteBtn.onclick = () => deleteTask(task.taskid);
+          taskItem.appendChild(deleteBtn);
 
           tasksList.appendChild(taskItem);
         });
@@ -136,33 +119,61 @@ document.addEventListener("DOMContentLoaded", function () {
       .catch((error) => console.error("Error fetching tasks:", error));
   }
 
-  // Call fetchTasks() initially to render the tasks for the selected course
-  const selectedCourseId = enrolledCoursesDropdown.value;
-  if (selectedCourseId) {
-    fetchTasks(selectedCourseId);
-  }
+  // Delete a task
+  function deleteTask(taskId) {
+    if (!confirm("Are you sure you want to delete this task?")) {
+      return;
+    }
 
-  function markTaskAsDone(taskId) {
-    // Mark the task as done
     fetch(`/api/tasks/${taskId}`, {
-      method: "PATCH",
+      method: "DELETE",
     })
-      .then((response) => response.json())
-      .then((task) => {
-        alert(`Task "${task.description}" marked as done.`);
-
-        // Get the selected course ID from the dropdown to refresh the tasks
-        const selectedCourseId = enrolledCoursesDropdown.value;
-
-        // Refresh the tasks list
-        if (selectedCourseId) {
-          fetchTasks(selectedCourseId);
+      .then((response) => {
+        if (response.ok) {
+          alert("Task deleted successfully!");
+          const selectedCourseId = enrolledCoursesDropdown.value;
+          if (selectedCourseId) {
+            fetchTasks(selectedCourseId);
+          }
+        } else {
+          return response.json().then((data) => {
+            throw new Error(data.error || "Failed to delete the task.");
+          });
         }
       })
       .catch((error) => {
-        console.error("Error marking task as done:", error);
-        alert(`Error marking task as done: ${error.message}`);
+        console.error("Error deleting task:", error);
+        alert(`Error deleting task: ${error.message}`);
       });
+
+    // Call fetchTasks() initially to render the tasks for the selected course
+    const selectedCourseId = enrolledCoursesDropdown.value;
+    if (selectedCourseId) {
+      fetchTasks(selectedCourseId);
+    }
+
+    function markTaskAsDone(taskId) {
+      // Mark the task as done
+      fetch(`/api/tasks/${taskId}`, {
+        method: "PATCH",
+      })
+        .then((response) => response.json())
+        .then((task) => {
+          alert(`Task "${task.description}" marked as done.`);
+
+          // Get the selected course ID from the dropdown to refresh the tasks
+          const selectedCourseId = enrolledCoursesDropdown.value;
+
+          // Refresh the tasks list
+          if (selectedCourseId) {
+            fetchTasks(selectedCourseId);
+          }
+        })
+        .catch((error) => {
+          console.error("Error marking task as done:", error);
+          alert(`Error marking task as done: ${error.message}`);
+        });
+    }
   }
 
   const addTaskForm = document.getElementById("addTaskForm");
@@ -203,7 +214,6 @@ document.addEventListener("DOMContentLoaded", function () {
       .catch((error) => console.error("Error adding task:", error));
   }
 });
-
 
 window.unenrollFromCourse = function (courseId) {
   if (!confirm("Are you sure you want to unenroll from this course?")) {

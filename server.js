@@ -175,6 +175,27 @@ app.patch("/api/tasks/:taskId", async (req, res) => {
   }
 });
 
+// Delete a task
+app.delete("/api/tasks/:taskId", async (req, res) => {
+  const taskId = req.params.taskId;
+
+  try {
+    const deleteQuery = "DELETE FROM tasks WHERE taskid = $1 RETURNING *;";
+    const result = await pool.query(deleteQuery, [taskId]);
+
+    if (result.rowCount === 0) {
+      return res
+        .status(404)
+        .json({ error: "Task not found or already deleted" });
+    }
+
+    res.json({ success: true, message: `Task ${taskId} deleted successfully` });
+  } catch (error) {
+    console.error("Error deleting task:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
